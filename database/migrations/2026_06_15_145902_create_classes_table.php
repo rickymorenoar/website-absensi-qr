@@ -9,22 +9,20 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
-    {
-    Schema::create('attendances', function (Blueprint $table) {
+public function up()
+{
+    Schema::create('classes', function (Blueprint $table) {
         $table->id();
-        $table->foreignId('user_id')->constrained(); // Murid yang absen
-        $table->foreignId('class_id')->constrained(); // Absen di kelas mana
-        $table->string('status'); // 'hadir', 'izin', atau 'alpa'
+        $table->string('name');
         $table->timestamps();
     });
-    }
+}
 
     /**
      * Reverse the migrations.
      */
     public function down(): void
     {
-        Schema::dropIfExists('attendances');
+        Schema::dropIfExists('classes');
     }
 };

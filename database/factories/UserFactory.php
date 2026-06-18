@@ -1,45 +1,40 @@
 <?php
 
-namespace Database\Factories;
+namespace App\Models;
 
-use App\Models\User;
-use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
+// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-/**
- * @extends Factory<User>
- */
-class UserFactory extends Factory
+// 1. Tambahin class_id dan no_absen di sini biar bisa disimpan ke database
+#[Fillable(['name', 'email', 'password', 'role', 'class_id', 'no_absen'])]
+#[Hidden(['password', 'remember_token'])]
+class User extends Authenticatable
 {
-    /**
-     * The current password being used by the factory.
-     */
-    protected static ?string $password;
+    /** @use HasFactory<UserFactory> */
+    use HasFactory, Notifiable;
 
     /**
-     * Define the model's default state.
+     * Get the attributes that should be cast.
      *
-     * @return array<string, mixed>
+     * @return array<string, string>
      */
-    public function definition(): array
+    protected function casts(): array
     {
         return [
-            'name' => fake()->name(),
-            'email' => fake()->unique()->safeEmail(),
-            'email_verified_at' => now(),
-            'password' => static::$password ??= Hash::make('password'),
-            'remember_token' => Str::random(10),
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
         ];
     }
 
-    /**
-     * Indicate that the model's email address should be unverified.
-     */
-    public function unverified(): static
+
+    public function class(): BelongsTo
     {
-        return $this->state(fn (array $attributes) => [
-            'email_verified_at' => null,
-        ]);
+        return $this->belongsTo(ClassModel::class, 'class_id');
     }
 }
