@@ -25,7 +25,7 @@ Route::middleware(['auth'])->group(function () {
     // ====================================================================
     Route::middleware(['role:admin'])->group(function () {
         
-        // Halaman Cetak QR (Pastikan nama file di resources/js/Pages/CetakQr.vue)
+        // Halaman Cetak QR
         Route::get('/cetak-qr', function () {
             return Inertia::render('CetakQr');
         })->name('cetak.qr');
@@ -46,6 +46,10 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['role:guru,admin'])->group(function () {
         Route::get('/dashboard-guru', [ClassController::class, 'index'])->name('dashboard.guru');
         Route::post('/classes', [ClassController::class, 'store'])->name('classes.store');
+        
+        // Rute Export Excel (Ditambah sesuai request)
+        Route::get('/attendance/export', [AttendanceController::class, 'export'])->name('attendance.export');
+        
         Route::get('/export-excel/{class_id}', [ClassController::class, 'exportExcel'])->name('classes.export');
         Route::get('/master-qr', [ClassController::class, 'showMasterQr'])->name('qr.master');
     });
