@@ -4,7 +4,7 @@
 
 <p align="center">
     <a href="#"><img src="https://img.shields.io/badge/Status-Development-green" alt="Status"></a>
-    <a href="#"><img src="https://img.shields.io/badge/Laravel-11.x-red" alt="Laravel Version"></a>
+    <a href="#"><img src="https://img.shields.io/badge/Laravel-13.x-red" alt="Laravel Version"></a>
     <a href="#"><img src="https://img.shields.io/badge/Database-MySQL-blue" alt="Database"></a>
 </p>
 
