@@ -1,58 +1,119 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
-
 <p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
+    <img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo">
 </p>
 
-## About Laravel
+<p align="center">
+    <a href="#"><img src="https://img.shields.io/badge/Status-Development-green" alt="Status"></a>
+    <a href="#"><img src="https://img.shields.io/badge/Laravel-11.x-red" alt="Laravel Version"></a>
+    <a href="#"><img src="https://img.shields.io/badge/Database-MySQL-blue" alt="Database"></a>
+</p>
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+# Sistem Absensi QR
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+Aplikasi berbasis web untuk mengelola kehadiran siswa secara efisien menggunakan pemindaian kode QR. Sistem ini memastikan proses absensi berlangsung **real-time**, transparan, dan terintegrasi penuh dengan manajemen data sekolah.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## 📁 Project Structure
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+Aplikasi ini menggunakan arsitektur **Model-View-Controller (MVC)** Laravel dengan struktur sebagai berikut:
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
-
-```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+```text
+absen-qr/
+├── app/
+│   ├── Http/Controllers/    # Logika Scan QR & Absensi
+│   ├── Models/              # User.php, ClassModel.php, Attendance.php
+├── database/
+│   ├── factories/           # UserFactory.php (generate data dummy)
+│   ├── migrations/          # Skema database (users, classes, attendances)
+│   ├── seeders/             # DatabaseSeeder.php & ClassSeeder.php
+├── resources/
+│   ├── js/Pages/            # Antarmuka Vue (Inertia.js)
+├── routes/
+│   └── web.php              # Pengaturan rute aplikasi
+└── .env                     # Konfigurasi database
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+---
 
-## Contributing
+## 🚀 Instalasi & Setup
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Ikuti langkah-langkah berikut untuk menjalankan aplikasi secara lokal.
 
-## Code of Conduct
+### 1. Install Dependencies
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```bash
+composer install
+npm install
+```
 
-## Security Vulnerabilities
+Aplikasi ini menggunakan [`lucide-react`](https://lucide.dev/) untuk ikon antarmuka. Install dengan:
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```bash
+npm install lucide-react
+```
 
-## License
+### 2. Konfigurasi Environment
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Salin `.env.example` ke `.env`, lalu sesuaikan koneksi database Anda:
+
+```env
+DB_DATABASE=absensi-qr
+```
+
+### 3. Inisialisasi Database (Wajib)
+
+> ⚠️ Perintah berikut akan **menghapus semua data lama**, menjalankan ulang migrasi tabel, dan mengisi data awal (Admin & Kelas).
+
+```bash
+php artisan key:generate
+php artisan migrate:fresh --seed
+composer dump-autoload
+```
+
+### 4. Jalankan Aplikasi
+
+```bash
+php artisan serve
+npm run dev
+```
+
+---
+
+## 🛠 Database & Relasi
+
+Sistem ini menggunakan relasi antar tabel untuk menjaga konsistensi data:
+
+| Tabel | Keterangan |
+|---|---|
+| `users` | Menyimpan data akun, role (`admin`/`guru`/`siswa`), serta relasi `class_id`. |
+| `classes` | Menyimpan daftar master kelas (contoh: 7A – 9I). |
+| `attendances` | Tabel transaksi yang mencatat `user_id`, `class_id`, `status` (Hadir/Terlambat), dan `scan_time`. |
+
+---
+
+## 💡 Cara Penggunaan
+
+1. **Login** — Gunakan akun Admin yang telah terdaftar (`rickymoreno851@gmail.com`).
+2. **Dashboard** — Admin/Guru dapat memantau kehadiran siswa secara real-time.
+3. **Absensi Siswa** — Siswa melakukan scan QR Code yang disediakan oleh guru. Sistem akan memvalidasi waktu kedatangan secara otomatis dan menentukan status kehadiran.
+4. **Monitoring** — Gunakan menu "Monitoring" untuk melihat rekapitulasi kehadiran berdasarkan kelas dan tanggal.
+
+---
+
+## ⚠️ Aturan Pengembang
+
+- **Database**: Jangan menambah atau menghapus tabel secara manual melalui aplikasi manajemen database (seperti HeidiSQL/phpMyAdmin). Selalu gunakan `php artisan make:migration`.
+- **Cache**: Jika terjadi perubahan kode yang tidak muncul di browser, jalankan:
+
+```bash
+php artisan config:clear
+php artisan route:clear
+php artisan cache:clear
+```
+
+---
+
+## 📄 License
+
+Sistem ini merupakan perangkat lunak open-source untuk kebutuhan internal sekolah.

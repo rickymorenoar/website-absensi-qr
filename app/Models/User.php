@@ -2,48 +2,30 @@
 
 namespace App\Models;
 
-use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\Attendance;
+use App\Models\ClassModel;
 
-#[Fillable(['name', 'email', 'password', 'role', 'class_id', 'no_absen'])]
-#[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
-    /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+    protected $fillable = ['name', 'email', 'password', 'role', 'class_id', 'no_absen'];
+    protected $hidden = ['password', 'remember_token'];
+
+    protected function casts(): array {
+        return ['email_verified_at' => 'datetime', 'password' => 'hashed'];
     }
 
-    /**
-     * Relasi langsung ke tabel classes (Diubah jadi 'kelas' agar aman dari reserved keyword PHP)
-     */
-    public function kelas(): BelongsTo
-    {
+    public function kelas(): BelongsTo {
         return $this->belongsTo(ClassModel::class, 'class_id');
     }
 
-    /**
-     * Relasi ke tabel absensi (Satu siswa bisa punya banyak riwayat absen)
-     */
-    public function attendances(): HasMany
-    {
+    public function attendances(): HasMany {
         return $this->hasMany(Attendance::class, 'user_id');
     }
 }

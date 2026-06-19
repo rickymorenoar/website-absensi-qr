@@ -3,88 +3,89 @@
 namespace App\Http\Controllers;
 
 use App\Models\ClassModel;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Inertia\Inertia;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class ClassController extends Controller
 {
+    /**
+     * Generate QR Gerbang
+     */
+    public function showMasterQr()
+    {
+        $qrString = 'GERBANG_UTAMA_SEKOLAH'; 
+        $qr = QrCode::size(300)->generate($qrString);
+        
+        return Inertia::render('QrGenerator', ['qr' => $qr]);
+    }
+
+    /**
+     * Menampilkan daftar semua kelas beserta siswanya sekaligus (Optimized)
+     */
     public function index()
     {
-        // 1. Ambil tanggal hari ini secara otomatis
         $hariIni = Carbon::today()->toDateString();
 
-        // 2. Ambil SEMUA data kelas beserta data siswa & absensi mereka KHUSUS HARI INI
-        $classes = ClassModel::with(['students.attendances' => function($query) use ($hariIni) {
-            $query->whereDate('created_at', $hariIni);
-        }])->latest()->get();
+        // Mengambil semua kelas, beserta siswa, dan absensi hari ini dalam SATU query
+        $classes = ClassModel::with(['students' => function($query) use ($hariIni) {
+            $query->where('role', 'siswa')
+                  ->with(['attendances' => function($q) use ($hariIni) {
+                      $q->whereDate('created_at', $hariIni);
+                  }]);
+        }])->get();
 
         return Inertia::render('DashboardGuru', [
             'classes' => $classes
         ]);
     }
 
+    /**
+     * Simpan kelas baru
+     */
     public function store(Request $request)
     {
-        $request->validate([
-            'name' => 'required|string',
-        ]);
-
-        ClassModel::create([
-            'name' => $request->name,
-        ]);
-
+        $request->validate(['name' => 'required|string']);
+        ClassModel::create(['name' => $request->name]);
         return back()->with('success', 'Kelas berhasil ditambah!');
     }
 
-    // Menggantikan fungsi showQr lama agar menjadi Master QR tunggal gerbang sekolah
-    public function showMasterQr()
-    {
-        return Inertia::render('QrGenerator');
-    }
-
+    /**
+     * Export Excel/CSV
+     */
     public function exportExcel($class_id)
     {
-        // Cari data kelas berdasarkan ID
-        $class = ClassModel::findOrFail($class_id); 
+        $class = ClassModel::findOrFail($class_id);
         $hariIni = Carbon::today()->toDateString();
         
-        // Ambil data siswa beserta absen hari ini
-        $students = $class->students()->with(['attendances' => function($query) use ($hariIni) {
-            $query->whereDate('created_at', $hariIni);
-        }])->orderBy('no_absen', 'asc')->get();
+        $students = User::where('role', 'siswa')
+            ->where('class_id', $class_id)
+            ->with(['attendances' => function($query) use ($hariIni) {
+                $query->whereDate('created_at', $hariIni);
+            }])
+            ->orderBy('name', 'asc')
+            ->get();
 
-        $fileName = 'Rekap_Absen_Kelas_' . $class->name . '.csv';
+        $fileName = 'Rekap_Absen_' . $class->name . '_' . $hariIni . '.csv';
         
         $headers = [
             "Content-type"        => "text/csv",
             "Content-Disposition" => "attachment; filename=$fileName",
-            "Pragma"              => "no-cache",
-            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
-            "Expires"             => "0"
         ];
 
-        $columns = ['No Absen', 'Nama Siswa', 'Jam Scan QR', 'Status Kehadiran'];
-
-        $callback = function() use($students, $columns) {
+        $callback = function() use($students) {
             $file = fopen('php://output', 'w');
-            fputcsv($file, $columns);
+            fputcsv($file, ['No', 'Nama Siswa', 'Waktu Hadir', 'Status']);
 
-            foreach ($students as $student) {
-                // Ambil data absensi hari ini jika ada
+            foreach ($students as $index => $student) {
                 $attendance = $student->attendances->first();
-
-                // Logika: jika ada absensi tampilkan jam format HH:MM, jika tidak tampilkan '--:--'
-                $jamScan = $attendance ? Carbon::parse($attendance->created_at)->format('H:i') : '--:--';
-                
-                // Logika Status Kehadiran
-                $status = $attendance ? 'Hadir' : 'Belum Hadir';
-
                 fputcsv($file, [
-                    $student->no_absen,
+                    $index + 1,
                     $student->name,
-                    $jamScan,
-                    $status
+                    $attendance ? Carbon::parse($attendance->created_at)->format('H:i:s') : '-',
+                    $attendance ? 'Hadir' : 'Belum Hadir'
                 ]);
             }
             fclose($file);

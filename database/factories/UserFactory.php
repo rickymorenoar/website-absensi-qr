@@ -1,40 +1,29 @@
 <?php
 
-namespace App\Models;
+namespace Database\Factories;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Facades\Hash;
 
-// 1. Tambahin class_id dan no_absen di sini biar bisa disimpan ke database
-#[Fillable(['name', 'email', 'password', 'role', 'class_id', 'no_absen'])]
-#[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable
+/**
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
+ */
+class UserFactory extends Factory
 {
-    /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    // Menentukan model mana yang dibuat oleh factory ini
+    protected $model = User::class;
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
+    public function definition(): array
     {
         return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'name' => fake()->name(),
+            'email' => fake()->unique()->safeEmail(),
+            'password' => Hash::make('password'), // password default
+            'role' => 'siswa', 
+            'class_id' => null, 
+            'no_absen' => null,
+            'email_verified_at' => now(),
         ];
-    }
-
-
-    public function class(): BelongsTo
-    {
-        return $this->belongsTo(ClassModel::class, 'class_id');
     }
 }

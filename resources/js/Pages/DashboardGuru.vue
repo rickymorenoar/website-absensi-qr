@@ -1,77 +1,81 @@
-<script setup>
-import SidebarLayout from '@/Layouts/SidebarLayout.vue';
-import { Head, Link } from '@inertiajs/vue3';
+    <script setup>
+    import { ref } from 'vue';
+    import { Head, Link } from '@inertiajs/vue3';
+    import SidebarLayout from '@/Layouts/SidebarLayout.vue';
+    import { Monitor, Camera, ChevronDown, ChevronUp } from 'lucide-vue-next';
 
-// Menerima data kiriman $classes dari ClassController.php
-defineProps({
-    classes: {
-        type: Array,
-        default: () => []
-    }
-});
-</script>
+    defineProps({ classes: Array });
 
-<template>
-    <Head title="Monitoring Kelas" />
+    const expandedClassId = ref(null);
 
-    <SidebarLayout>
-        <div class="space-y-6">
-            
-            <!-- Header Page -->
-            <div>
-                <h1 class="text-2xl font-bold text-slate-900">Kelola Kelas (Monitoring)</h1>
-                <p class="text-sm text-slate-500">Pantau kehadiran siswa secara real-time khusus hari ini.</p>
+    const toggleDetail = (id) => {
+        expandedClassId.value = expandedClassId.value === id ? null : id;
+    };
+
+    // Fungsi cek status dan ambil jam scan
+    const getAttendanceData = (siswa) => {
+        const record = siswa.attendances && siswa.attendances.length > 0 ? siswa.attendances[0] : null;
+        return {
+            status: record ? 'HADIR' : 'BELUM',
+            time: record ? record.scan_time : '-'
+        };
+    };
+    </script>
+
+    <template>
+        <Head title="Kelola Kelas" />
+        
+        <SidebarLayout>
+            <div class="flex justify-between items-center mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="bg-indigo-100 p-2 rounded-lg text-indigo-600">
+                        <Monitor :size="24" />
+                    </div>
+                    <h1 class="text-2xl font-bold text-slate-800">Monitoring Kelas</h1>
+                </div>
+                <Link :href="route('scanner')" class="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition">
+                    <Camera :size="16" /> Scan QR
+                </Link>
             </div>
 
-            <!-- Grid Card Daftar Kelas -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div v-for="kelas in classes" :key="kelas.id" class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-col justify-between space-y-4">
-                    
-                    <!-- Detail Kelas Atas -->
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <h3 class="font-bold text-lg text-slate-900">{{ kelas.name }}</h3>
-                            <p class="text-xs text-slate-400">Total Siswa: {{ kelas.students ? kelas.students.length : 0 }}</p>
-                        </div>
-                        
-                        <!-- Tombol ke Halaman Cetak QR -->
-                        <Link :href="route('qr.show', kelas.id)" class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-xl text-xs font-semibold transition">
-                            🖨️ Cetak QR
-                        </Link>
+            <div class="space-y-3">
+                <div v-for="kelas in classes" :key="kelas.id" class="bg-white rounded-lg border border-slate-200 overflow-hidden shadow-sm">
+                    <div @click="toggleDetail(kelas.id)" class="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-slate-50 transition">
+                        <span class="font-bold text-slate-700">{{ kelas.name }}</span>
+                        <span class="text-xs text-slate-400 font-medium flex items-center gap-1">
+                            {{ expandedClassId === kelas.id ? 'Tutup' : 'Lihat Detail' }}
+                            <component :is="expandedClassId === kelas.id ? ChevronUp : ChevronDown" :size="14" />
+                        </span>
                     </div>
 
-                    <!-- Live Count Absen Hari Ini -->
-                    <div class="bg-slate-50 rounded-xl p-3 flex justify-between text-center text-xs">
-                        <div class="w-1/2">
-                            <p class="text-slate-400 font-medium mb-0.5">Hadir</p>
-                            <p class="text-lg font-bold text-emerald-600">
-                                {{ kelas.students ? kelas.students.filter(s => s.attendances && s.attendances.length > 0).length : 0 }}
-                            </p>
-                        </div>
-                        <div class="border-r border-slate-200"></div>
-                        <div class="w-1/2">
-                            <p class="text-slate-400 font-medium mb-0.5">Belum Hadir</p>
-                            <p class="text-lg font-bold text-amber-600">
-                                {{ kelas.students ? kelas.students.filter(s => !s.attendances || s.attendances.length === 0).length : 0 }}
-                            </p>
+                    <div v-if="expandedClassId === kelas.id" class="px-4 pb-4 animate-in fade-in duration-200">
+                        <div class="border-t border-slate-100 pt-3">
+                            <table class="w-full text-left text-sm">
+                                <thead>
+                                    <tr class="text-slate-400 text-[10px] uppercase">
+                                        <th class="py-2 w-10">No</th>
+                                        <th class="py-2">Nama Siswa</th>
+                                        <th class="py-2 text-center">Waktu</th>
+                                        <th class="py-2 text-right">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-50">
+                                    <tr v-for="(siswa, index) in kelas.students" :key="siswa.id">
+                                        <td class="py-2.5 text-slate-400 font-mono">{{ index + 1 }}</td>
+                                        <td class="py-2.5 text-slate-600">{{ siswa.name }}</td>
+                                        <td class="py-2.5 text-center text-xs text-slate-500 font-mono">{{ getAttendanceData(siswa).time }}</td>
+                                        <td class="py-2.5 text-right">
+                                            <span :class="getAttendanceData(siswa).status === 'HADIR' ? 'bg-green-50 text-green-600 border-green-200' : 'bg-red-50 text-red-500 border-red-200'"
+                                                class="px-2 py-0.5 rounded text-[10px] font-bold border">
+                                                {{ getAttendanceData(siswa).status }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
-
-                    <!-- Tombol Aksi Download Rekap -->
-                    <div class="pt-2">
-                        <a :href="route('classes.export', kelas.id)" class="w-full block text-center py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-medium transition shadow-sm">
-                            📥 Download Excel (.CSV)
-                        </a>
-                    </div>
-
                 </div>
             </div>
-
-            <!-- State Kalo Data Kelas Masih Kosong -->
-            <div v-if="classes.length === 0" class="text-center py-12 bg-white border border-slate-200 rounded-2xl">
-                <p class="text-slate-400 text-sm">Belum ada data kelas yang terdaftar di database.</p>
-            </div>
-
-        </div>
-    </SidebarLayout>
-</template>
+        </SidebarLayout>
+    </template>

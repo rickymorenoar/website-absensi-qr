@@ -1,58 +1,62 @@
 <?php
 
-use App\Http\Controllers\QrController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\ClassController;
 use App\Http\Controllers\AdminController;
-use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-// Halaman utama langsung redirect ke login
+// 1. Halaman Awal
 Route::get('/', function () {
     return redirect('/login'); 
 });
 
-// ========================================================
-// GERBANG UTAMA: Wajib Login Baru Bisa Akses Semua Ini
-// ========================================================
+// 2. Semua yang butuh Login
 Route::middleware(['auth'])->group(function () {
     
-    // 1. Dashboard Utama (Semua role login langsung mendarat di sini)
+    // Dashboard Utama
     Route::get('/dashboard', function () {
-        // Tanpa pilih kasih, semua role langsung melihat halaman penjelasan cara kerja absensi
         return Inertia::render('Dashboard');
     })->name('dashboard');
     
-    // 2. AREA ADMIN (Kelola Siswa & Kelola Guru) - AMAN DI DALAM AUTH
+    // ====================================================================
+    // AREA ADMIN (Wajib Role: admin)
+    // ====================================================================
     Route::middleware(['role:admin'])->group(function () {
-        // Kelola Siswa
+        
+        // Halaman Cetak QR (Pastikan nama file di resources/js/Pages/CetakQr.vue)
+        Route::get('/cetak-qr', function () {
+            return Inertia::render('CetakQr');
+        })->name('cetak.qr');
+
+        // Kelola Siswa 
         Route::get('/admin/siswa', [AdminController::class, 'index'])->name('admin.siswa.index');
         Route::post('/admin/siswa', [AdminController::class, 'store'])->name('admin.siswa.store');
         Route::post('/admin/siswa/import', [AdminController::class, 'importExcel'])->name('admin.siswa.import');
 
-        // Kelola Guru
+        // Kelola Guru 
         Route::get('/admin/guru', [AdminController::class, 'indexGuru'])->name('admin.guru.index');
         Route::post('/admin/guru', [AdminController::class, 'storeGuru'])->name('admin.guru.store');
     });
 
-    // 3. AREA BERSAMA: GURU & ADMIN (Bisa lihat daftar kelas, cetak QR, dan download Excel)
+    // ====================================================================
+    // AREA GURU & ADMIN
+    // ====================================================================
     Route::middleware(['role:guru,admin'])->group(function () {
         Route::get('/dashboard-guru', [ClassController::class, 'index'])->name('dashboard.guru');
         Route::post('/classes', [ClassController::class, 'store'])->name('classes.store');
-        Route::get('/qr/{id}', [ClassController::class, 'showQr'])->name('qr.show'); 
-        
-        // Route untuk download rekap Excel per kelas
         Route::get('/export-excel/{class_id}', [ClassController::class, 'exportExcel'])->name('classes.export');
+        Route::get('/master-qr', [ClassController::class, 'showMasterQr'])->name('qr.master');
     });
 
-    // 4. AREA SISWA: Hanya bisa akses Kamera Scanner & Kirim Data Absen
-    Route::middleware(['role:siswa'])->group(function () {
+    // ====================================================================
+    // AREA SISWA (Bisa diakses juga oleh Admin & Guru)
+    // ====================================================================
+    Route::middleware(['role:siswa,admin,guru'])->group(function () {
         Route::get('/scanner', fn () => Inertia::render('Scanner'))->name('scanner');
         Route::post('/absen', [AttendanceController::class, 'store'])->name('absen.store');
         
-        // Fitur tes absen lewat URL
         Route::get('/tes-absen/{class_id}', function ($class_id) {
             \App\Models\Attendance::create([
                 'user_id' => auth()->id(), 
@@ -63,11 +67,10 @@ Route::middleware(['auth'])->group(function () {
         });
     });
 
-    // 5. Fitur Edit Profil User (Berlaku untuk semua Role setelah login)
+    // Profil User
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-
 });
 
 require __DIR__.'/auth.php';
